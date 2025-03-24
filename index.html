@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake Móvil</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <div class="score-display">
+                <div>Puntos: <span id="score">0</span></div>
+                <div>Récord: <span id="high-score">0</span></div>
+            </div>
+            <button id="pause-btn">Pausa</button>
+        </div>
+        
+        <canvas id="game-board"></canvas>
+        
+        <div class="controls">
+            <div class="control-row">
+                <button id="up-btn" class="control-btn">↑</button>
+            </div>
+            <div class="control-row">
+                <button id="left-btn" class="control-btn">←</button>
+                <button id="right-btn" class="control-btn">→</button>
+            </div>
+            <div class="control-row">
+                <button id="down-btn" class="control-btn">↓</button>
+            </div>
+        </div>
+        
+        <div class="game-menu" id="start-menu">
+            <h1>Snake Móvil</h1>
+            <button id="start-btn">Comenzar Juego</button>
+            <div class="instructions">
+                <p>Usa los botones para controlar la serpiente</p>
+                <p>Come la comida roja para crecer</p>
+            </div>
+        </div>
+        
+        <div class="game-menu hidden" id="pause-menu">
+            <h1>Juego Pausado</h1>
+            <button id="resume-btn">Continuar</button>
+            <button id="restart-btn">Reiniciar</button>
+        </div>
+        
+        <div class="game-menu hidden" id="gameover-menu">
+            <h1>Game Over</h1>
+            <p>Puntuación: <span id="final-score">0</span></p>
+            <button id="play-again-btn">Jugar de nuevo</button>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
