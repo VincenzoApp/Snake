@@ -26,10 +26,19 @@
             max-width: 600px;
             max-height: 400px;
         }
-        #scoreboard {
+        #scoreboard, #startButton {
             margin-top: 10px;
             font-size: 20px;
             color: white;
+        }
+        #startButton {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: green;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 15px;
         }
     </style>
 </head>
@@ -38,6 +47,7 @@
     <div id="scoreboard">
         Punteggio: <span id="score">0</span> | Record: <span id="highscore">0</span>
     </div>
+    <button id="startButton">Start</button>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -45,17 +55,22 @@
         canvas.width = Math.min(window.innerWidth * 0.9, 600);
         canvas.height = Math.min(window.innerHeight * 0.6, 400);
         const box = 20;
-        let snake = [{ x: 10 * box, y: 10 * box }];
-        let direction = "RIGHT";
-        let score = 0;
-        let highscore = localStorage.getItem("highscore") || 0;
-        document.getElementById("highscore").innerText = highscore;
-        let food = generateFood();
-        let specialFood = null;
-        let gameRunning = true;
+        let snake, direction, score, highscore, food, specialFood, gameRunning;
         const appleImage = new Image();
-        appleImage.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Red_Apple.png/32px-Red_Apple.png";
-
+        appleImage.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Red_Apple.png/50px-Red_Apple.png";
+        
+        function initializeGame() {
+            snake = [{ x: 10 * box, y: 10 * box }];
+            direction = "RIGHT";
+            score = 0;
+            highscore = localStorage.getItem("highscore") || 0;
+            document.getElementById("highscore").innerText = highscore;
+            food = generateFood();
+            specialFood = null;
+            gameRunning = true;
+            document.getElementById("score").innerText = score;
+        }
+        
         function draw() {
             if (!gameRunning) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -67,7 +82,7 @@
             ctx.fillStyle = "lime";
             snake.forEach(part => ctx.fillRect(part.x, part.y, box, box));
         }
-
+        
         function move() {
             if (!gameRunning) return;
             let head = { ...snake[0] };
@@ -80,7 +95,7 @@
             if (snake.some(part => part.x === head.x && part.y === head.y)) {
                 gameRunning = false;
                 alert("Game Over!");
-                location.reload();
+                return;
             }
             snake.unshift(head);
             if (isColliding(head, food)) {
@@ -154,12 +169,14 @@
             startX = event.touches[0].clientX;
             startY = event.touches[0].clientY;
         });
-
         document.addEventListener("touchend", (event) => {
             handleSwipe(startX, startY, event.changedTouches[0].clientX, event.changedTouches[0].clientY);
         });
 
-        setInterval(move, 150);
+        document.getElementById("startButton").addEventListener("click", () => {
+            initializeGame();
+            setInterval(move, 150);
+        });
     </script>
 </body>
 </html>
