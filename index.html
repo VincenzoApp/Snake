@@ -43,6 +43,37 @@
             font-weight: bold;
             text-shadow: 0 0 10px #f00;
             display: none;
+            z-index: 5;
+        }
+        #start-btn {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+            z-index: 10;
+            display: block;
+        }
+        #start-btn:hover {
+            background-color: #45a049;
+        }
+        .game-message {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            width: 100%;
+            z-index: 5;
         }
     </style>
 </head>
@@ -53,6 +84,8 @@
             Punteggio: <span id="score">0</span> | Record: <span id="highscore">0</span>
         </div>
         <div id="game-over">GAME OVER</div>
+        <div id="start-message" class="game-message" style="display: none;">Premi Start per iniziare</div>
+        <button id="start-btn">Start</button>
     </div>
 
     <script>
@@ -60,27 +93,52 @@
         const ctx = canvas.getContext('2d');
         const box = 20;
         const canvasSize = 400;
+        const startBtn = document.getElementById('start-btn');
+        const startMessage = document.getElementById('start-message');
         
         // Imposta dimensioni fisse
         canvas.width = canvasSize;
         canvas.height = canvasSize;
         
-        let snake = [
-            {x: 9 * box, y: 9 * box},
-            {x: 8 * box, y: 9 * box},
-            {x: 7 * box, y: 9 * box}
-        ];
+        let snake = [];
         let direction = 'RIGHT';
         let nextDirection = 'RIGHT';
-        let food = createFood();
+        let food = {};
         let specialFood = null;
         let score = 0;
         let highscore = localStorage.getItem('snakeHighscore') || 0;
         let gameOver = false;
+        let gameStarted = false;
         let lastRenderTime = 0;
         const SNAKE_SPEED = 10; // Movimenti al secondo
         
         document.getElementById('highscore').textContent = highscore;
+
+        // Funzione per inizializzare il gioco
+        function initGame() {
+            snake = [
+                {x: 9 * box, y: 9 * box},
+                {x: 8 * box, y: 9 * box},
+                {x: 7 * box, y: 9 * box}
+            ];
+            direction = 'RIGHT';
+            nextDirection = 'RIGHT';
+            food = createFood();
+            specialFood = null;
+            score = 0;
+            gameOver = false;
+            document.getElementById('score').textContent = score;
+            document.getElementById('game-over').style.display = 'none';
+            startMessage.style.display = 'none';
+            
+            if (gameStarted) {
+                startBtn.textContent = 'Re-start';
+            }
+            gameStarted = true;
+            
+            lastRenderTime = 0;
+            window.requestAnimationFrame(gameLoop);
+        }
 
         // Funzione per creare il cibo
         function createFood() {
@@ -95,7 +153,7 @@
             return {
                 x: Math.floor(Math.random() * (canvas.width / box)) * box,
                 y: Math.floor(Math.random() * (canvas.height / box)) * box,
-                type: Math.random() < 0.7 ? 'worm' : 'insect',
+                type: Math.random() < 0.7 ? 'donut' : 'insect',
                 spawnTime: Date.now()
             };
         }
@@ -191,194 +249,66 @@
             });
         }
 
-        // Disegna la mela con dettagli realistici
+        // Disegna la mela come emoji
         function drawApple() {
-            // Ombreggiatura
+            ctx.font = `${box}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             ctx.shadowColor = 'rgba(0,0,0,0.5)';
             ctx.shadowBlur = 5;
             ctx.shadowOffsetX = 2;
             ctx.shadowOffsetY = 2;
-            
-            // Corpo mela con gradiente
-            const gradient = ctx.createRadialGradient(
-                food.x + box/2, food.y + box/2, 0,
-                food.x + box/2, food.y + box/2, box/2
-            );
-            gradient.addColorStop(0, '#FF5252');
-            gradient.addColorStop(1, '#D32F2F');
-            ctx.fillStyle = gradient;
-            
-            ctx.beginPath();
-            ctx.ellipse(food.x + box/2, food.y + box/2, box/2.5, box/2, Math.PI/6, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Picciolo
-            ctx.strokeStyle = '#5D4037';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(food.x + box/1.5, food.y + box/4);
-            ctx.quadraticCurveTo(food.x + box/1.2, food.y - box/10, food.x + box/3, food.y + box/6);
-            ctx.stroke();
-            
-            // Foglia con dettagli
-            ctx.fillStyle = '#388E3C';
-            ctx.beginPath();
-            ctx.moveTo(food.x + box/3, food.y + box/6);
-            ctx.quadraticCurveTo(food.x + box/4, food.y - box/3, food.x, food.y + box/6);
-            ctx.quadraticCurveTo(food.x + box/6, food.y + box/3, food.x + box/3, food.y + box/6);
-            ctx.fill();
-            
-            // Venatura foglia
-            ctx.strokeStyle = '#2E7D32';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(food.x + box/3, food.y + box/6);
-            ctx.quadraticCurveTo(food.x + box/6, food.y + box/10, food.x + box/8, food.y + box/4);
-            ctx.stroke();
-            
-            // Riflesso
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            ctx.beginPath();
-            ctx.arc(food.x + box/1.8, food.y + box/3, 3, 0, Math.PI * 2);
-            ctx.fill();
-            
+            ctx.fillText('🍎', food.x + box/2, food.y + box/2);
             ctx.shadowColor = 'transparent';
         }
 
-        // Disegna il verme con animazione
-        function drawWorm() {
+        // Disegna la ciambella come emoji
+        function drawDonut() {
             if (!specialFood) return;
             
-            const time = Date.now() - specialFood.spawnTime;
-            const wiggle = Math.sin(time / 200) * 3;
+            ctx.font = `${box}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             
+            // Animazione rotante
+            const time = Date.now() - specialFood.spawnTime;
+            const rotation = Math.sin(time / 300) * 0.2;
+            
+            ctx.save();
+            ctx.translate(specialFood.x + box/2, specialFood.y + box/2);
+            ctx.rotate(rotation);
             ctx.shadowColor = 'rgba(0,0,0,0.5)';
             ctx.shadowBlur = 5;
             ctx.shadowOffsetX = 2;
             ctx.shadowOffsetY = 2;
             
-            // Corpo segmentato con animazione
-            const segments = 5;
-            for (let i = 0; i < segments; i++) {
-                const offset = Math.sin(time / 300 + i) * 2;
-                const segX = specialFood.x + i * (box / segments);
-                const segY = specialFood.y + (i % 2 === 0 ? wiggle : -wiggle) + offset;
-                
-                ctx.fillStyle = i % 2 === 0 ? '#FFA000' : '#FF8F00';
-                ctx.beginPath();
-                ctx.ellipse(
-                    segX + box/segments/2, 
-                    segY + box/2, 
-                    box/segments/1.5, 
-                    box/3, 
-                    0, 
-                    0, 
-                    Math.PI * 2
-                );
-                ctx.fill();
-                
-                // Anelli tra i segmenti
-                if (i < segments - 1) {
-                    ctx.strokeStyle = '#E65100';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.arc(segX + box/segments, segY + box/2, 2, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-            }
-            
-            // Occhi
-            ctx.fillStyle = 'black';
-            ctx.beginPath();
-            ctx.arc(specialFood.x + box/6, specialFood.y + box/3 + wiggle/2, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-            
+            ctx.fillText('🍩', 0, 0);
+            ctx.restore();
             ctx.shadowColor = 'transparent';
         }
 
-        // Disegna l'insetto con ali animate
+        // Disegna l'insetto come emoji
         function drawInsect() {
             if (!specialFood) return;
             
-            const time = Date.now() - specialFood.spawnTime;
-            const wingFlap = Math.abs(Math.sin(time / 100)) * 5;
+            ctx.font = `${box}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             
-            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            // Animazione ali
+            const time = Date.now() - specialFood.spawnTime;
+            const scale = 1 + Math.sin(time / 100) * 0.1;
+            
+            ctx.save();
+            ctx.translate(specialFood.x + box/2, specialFood.y + box/2);
+            ctx.scale(scale, scale);
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
             ctx.shadowBlur = 5;
             ctx.shadowOffsetX = 2;
             ctx.shadowOffsetY = 2;
             
-            // Corpo
-            const gradient = ctx.createLinearGradient(
-                specialFood.x + box/2, specialFood.y,
-                specialFood.x + box/2, specialFood.y + box
-            );
-            gradient.addColorStop(0, '#FFD600');
-            gradient.addColorStop(1, '#FBC02D');
-            ctx.fillStyle = gradient;
-            
-            ctx.beginPath();
-            ctx.ellipse(
-                specialFood.x + box/2, 
-                specialFood.y + box/2, 
-                box/3, 
-                box/4, 
-                0, 
-                0, 
-                Math.PI * 2
-            );
-            ctx.fill();
-            
-            // Testa
-            ctx.fillStyle = '#FFAB00';
-            ctx.beginPath();
-            ctx.arc(specialFood.x + box/2, specialFood.y + box/4, box/6, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Ali con animazione di battito
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-            for (let i = 0; i < 2; i++) {
-                ctx.beginPath();
-                ctx.moveTo(specialFood.x + box/2, specialFood.y + box/3);
-                const cpx = i === 0 ? specialFood.x : specialFood.x + box;
-                ctx.quadraticCurveTo(
-                    cpx, 
-                    specialFood.y + box/3 - wingFlap, 
-                    specialFood.x + box/2 + (i === 0 ? -box/4 : box/4), 
-                    specialFood.y + box/3
-                );
-                ctx.quadraticCurveTo(
-                    cpx, 
-                    specialFood.y + box/3 + wingFlap, 
-                    specialFood.x + box/2, 
-                    specialFood.y + box/3
-                );
-                ctx.fill();
-            }
-            
-            // Occhi
-            ctx.fillStyle = 'black';
-            ctx.beginPath();
-            ctx.arc(specialFood.x + box/2.5, specialFood.y + box/4, 1.5, 0, Math.PI * 2);
-            ctx.arc(specialFood.x + box/1.7, specialFood.y + box/4, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Zampe
-            ctx.strokeStyle = '#FFA000';
-            ctx.lineWidth = 1.5;
-            for (let i = 0; i < 3; i++) {
-                const legY = specialFood.y + box/2 + i * box/6;
-                ctx.beginPath();
-                ctx.moveTo(specialFood.x + box/3, legY);
-                ctx.lineTo(specialFood.x + box/6, legY + box/6);
-                ctx.stroke();
-                
-                ctx.beginPath();
-                ctx.moveTo(specialFood.x + box*2/3, legY);
-                ctx.lineTo(specialFood.x + box*5/6, legY + box/6);
-                ctx.stroke();
-            }
-            
+            ctx.fillText('🐛', 0, 0);
+            ctx.restore();
             ctx.shadowColor = 'transparent';
         }
 
@@ -386,6 +316,8 @@
         function gameLoop(timestamp) {
             if (gameOver) {
                 document.getElementById('game-over').style.display = 'block';
+                startBtn.style.display = 'block';
+                startMessage.style.display = 'none';
                 return;
             }
             
@@ -432,9 +364,9 @@
             } 
             // Controlla se mangia cibo speciale
             else if (specialFood && head.x === specialFood.x && head.y === specialFood.y) {
-                score += specialFood.type === 'worm' ? 2 : 5;
+                score += specialFood.type === 'donut' ? 3 : 5; // Più punti per la ciambella
                 // Aggiungi più segmenti per cibo speciale
-                for (let i = 0; i < (specialFood.type === 'worm' ? 2 : 3); i++) {
+                for (let i = 0; i < (specialFood.type === 'donut' ? 3 : 4); i++) {
                     snake.push({...snake[snake.length-1]});
                 }
                 specialFood = null;
@@ -477,7 +409,7 @@
             
             drawApple();
             if (specialFood) {
-                if (specialFood.type === 'worm') drawWorm();
+                if (specialFood.type === 'donut') drawDonut();
                 else drawInsect();
             }
             drawSnake();
@@ -488,14 +420,15 @@
         function endGame() {
             gameOver = true;
             document.getElementById('game-over').style.display = 'block';
-            
-            canvas.addEventListener('click', () => {
-                location.reload();
-            }, {once: true});
+            startBtn.style.display = 'block';
+            startBtn.textContent = 'Re-start';
+            startMessage.style.display = 'none';
         }
 
         // Controlli da tastiera
         document.addEventListener('keydown', e => {
+            if (!gameStarted) return;
+            
             if (e.key === 'ArrowLeft' && direction !== 'RIGHT') nextDirection = 'LEFT';
             if (e.key === 'ArrowRight' && direction !== 'LEFT') nextDirection = 'RIGHT';
             if (e.key === 'ArrowUp' && direction !== 'DOWN') nextDirection = 'UP';
@@ -507,11 +440,15 @@
         let touchStartY = 0;
         
         canvas.addEventListener('touchstart', e => {
+            if (!gameStarted) return;
+            
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
         }, false);
         
         canvas.addEventListener('touchend', e => {
+            if (!gameStarted) return;
+            
             const touchEndX = e.changedTouches[0].clientX;
             const touchEndY = e.changedTouches[0].clientY;
             
@@ -527,8 +464,16 @@
             }
         }, false);
 
-        // Avvia il gioco
-        window.requestAnimationFrame(gameLoop);
+        // Gestione pulsante Start/Re-start
+        startBtn.addEventListener('click', () => {
+            startBtn.style.display = 'none';
+            startMessage.style.display = 'none';
+            initGame();
+        });
+
+        // Mostra il messaggio iniziale
+        startMessage.style.display = 'block';
+        startBtn.textContent = 'Start';
     </script>
 </body>
 </html>
