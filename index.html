@@ -15,30 +15,21 @@
             align-items: center;
             height: 100vh;
             background-color: #222;
-            flex-direction: column;
         }
         canvas {
             background-color: black;
             display: block;
             border: 2px solid white;
-            width: 90vw;
-            height: 60vh;
+            width: 100vmin;
+            height: 100vmin;
             max-width: 600px;
-            max-height: 400px;
+            max-height: 600px;
         }
-        #scoreboard, #startButton {
-            margin-top: 10px;
+        #scoreboard {
+            position: fixed;
+            bottom: 20px;
             font-size: 20px;
             color: white;
-        }
-        #startButton {
-            padding: 10px 20px;
-            font-size: 18px;
-            background-color: green;
-            color: white;
-            border: none;
-            cursor: pointer;
-            margin-top: 15px;
         }
     </style>
 </head>
@@ -47,34 +38,27 @@
     <div id="scoreboard">
         Punteggio: <span id="score">0</span> | Record: <span id="highscore">0</span>
     </div>
-    <button id="startButton">Start</button>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-        canvas.width = Math.min(window.innerWidth * 0.9, 600);
-        canvas.height = Math.min(window.innerHeight * 0.6, 400);
-        const box = 20;
-        let snake, direction, score, highscore, food, specialFood, gameRunning;
-        const appleImage = new Image();
-        appleImage.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Red_Apple.png/50px-Red_Apple.png";
-        
-        function initializeGame() {
-            snake = [{ x: 10 * box, y: 10 * box }];
-            direction = "RIGHT";
-            score = 0;
-            highscore = localStorage.getItem("highscore") || 0;
-            document.getElementById("highscore").innerText = highscore;
-            food = generateFood();
-            specialFood = null;
-            gameRunning = true;
-            document.getElementById("score").innerText = score;
-        }
-        
+        canvas.width = Math.min(window.innerWidth, window.innerHeight) * 0.95;
+        canvas.height = canvas.width;
+        const box = canvas.width / 20;
+        let snake = [{ x: 10 * box, y: 10 * box }];
+        let direction = "RIGHT";
+        let score = 0;
+        let highscore = localStorage.getItem("highscore") || 0;
+        document.getElementById("highscore").innerText = highscore;
+        let food = generateFood();
+        let specialFood = null;
+        let gameRunning = true;
+
         function draw() {
             if (!gameRunning) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(appleImage, food.x, food.y, box, box);
+            ctx.fillStyle = "red";
+            ctx.fillRect(food.x, food.y, box, box);
             if (specialFood) {
                 ctx.fillStyle = specialFood.type === "worm" ? "orange" : "yellow";
                 ctx.fillRect(specialFood.x, specialFood.y, box, box);
@@ -82,7 +66,7 @@
             ctx.fillStyle = "lime";
             snake.forEach(part => ctx.fillRect(part.x, part.y, box, box));
         }
-        
+
         function move() {
             if (!gameRunning) return;
             let head = { ...snake[0] };
@@ -95,17 +79,17 @@
             if (snake.some(part => part.x === head.x && part.y === head.y)) {
                 gameRunning = false;
                 alert("Game Over!");
-                return;
+                location.reload();
             }
             snake.unshift(head);
-            if (isColliding(head, food)) {
+            if (head.x === food.x && head.y === food.y) {
                 score++;
                 food = generateFood();
                 if (Math.random() < 0.2) specialFood = generateSpecialFood();
-            } else if (specialFood && isColliding(head, specialFood)) {
+            } else if (specialFood && head.x === specialFood.x && head.y === specialFood.y) {
                 score += specialFood.type === "worm" ? 2 : 5;
                 for (let i = 0; i < (specialFood.type === "worm" ? 2 : 5); i++) {
-                    snake.push({ ...snake[snake.length - 1] });
+                    snake.push({});
                 }
                 specialFood = null;
             } else {
@@ -121,35 +105,11 @@
         }
 
         function generateFood() {
-            let position;
-            do {
-                position = {
-                    x: Math.floor(Math.random() * (canvas.width / box)) * box,
-                    y: Math.floor(Math.random() * (canvas.height / box)) * box
-                };
-            } while (snake.some(part => isColliding(part, position)));
-            return position;
+            return { x: Math.floor(Math.random() * (canvas.width / box)) * box, y: Math.floor(Math.random() * (canvas.height / box)) * box };
         }
         
         function generateSpecialFood() {
-            let position;
-            do {
-                position = {
-                    x: Math.floor(Math.random() * (canvas.width / box)) * box,
-                    y: Math.floor(Math.random() * (canvas.height / box)) * box,
-                    type: Math.random() < 0.7 ? "worm" : "insect"
-                };
-            } while (snake.some(part => isColliding(part, position)));
-            return position;
-        }
-
-        function isColliding(a, b) {
-            return (
-                a.x < b.x + box &&
-                a.x + box > b.x &&
-                a.y < b.y + box &&
-                a.y + box > b.y
-            );
+            return { x: Math.floor(Math.random() * (canvas.width / box)) * box, y: Math.floor(Math.random() * (canvas.height / box)) * box, type: Math.random() < 0.7 ? "worm" : "insect" };
         }
 
         function handleSwipe(startX, startY, endX, endY) {
@@ -169,14 +129,12 @@
             startX = event.touches[0].clientX;
             startY = event.touches[0].clientY;
         });
+
         document.addEventListener("touchend", (event) => {
             handleSwipe(startX, startY, event.changedTouches[0].clientX, event.changedTouches[0].clientY);
         });
 
-        document.getElementById("startButton").addEventListener("click", () => {
-            initializeGame();
-            setInterval(move, 150);
-        });
+        setInterval(move, 150);
     </script>
 </body>
 </html>
