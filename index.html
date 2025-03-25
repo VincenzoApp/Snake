@@ -18,7 +18,7 @@
             flex-direction: column;
         }
         canvas {
-            background-color: black;
+            background-color: #1a3a1a;
             display: block;
             border: 2px solid white;
             width: 90vw;
@@ -54,17 +54,49 @@
         let specialFood = null;
         let gameRunning = true;
 
+        // Immagini per gli elementi del gioco
+        const snakeHeadImg = new Image();
+        const snakeBodyImg = new Image();
+        const appleImg = new Image();
+        const wormImg = new Image();
+        const insectImg = new Image();
+        
+        // Caricamento immagini (usiamo forme semplici se le immagini non caricano)
+        snakeHeadImg.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iOCIgZmlsbD0ibGltZSIvPjxjaXJjbGUgY3g9IjgiIGN5PSI4IiByPSIxLjUiIGZpbGw9ImJsYWNrIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIxLjUiIGZpbGw9ImJsYWNrIi8+PHBhdGggZD0iTTggMTMgUTkgMTQgMTIgMTQgUTE1IDE0IDE2IDEzIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48L3N2Zz4=';
+        snakeBodyImg.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iOCIgZmlsbD0ibGltZSIvPjwvc3ZnPg==';
+        appleImg.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iOCIgZmlsbD0icmVkIi8+PHBhdGggZD0iTTEwIDIgTDEwIDQiIHN0cm9rZT0iZ3JlZW4iIHN0cm9rZS13aWR0aD0iMiIvPjxwYXRoIGQ9Ik0xMCA0IHEtMiAwIC0yIDIiIHN0cm9rZT0iZ3JlZW4iIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==';
+        wormImg.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCI+PGVsbGlwc2UgY3g9IjEwIiBjeT0iMTAiIHJ4PSI4IiByeT0iNCIgZmlsbD0ib3JhbmdlIi8+PGNpcmNsZSBjeD0iNiIgY3k9IjEwIiByPSIxIiBmaWxsPSJibGFjayIvPjwvc3ZnPg==';
+        insectImg.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iNiIgZmlsbD0ieWVsbG93Ii8+PHBhdGggZD0iTTQgNiBMMTYgNiIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTTQgMTQgTDE2IDE0IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiLz48Y2lyY2xlIGN4PSI2IiBjeT0iNSIgcj0iMS41IiBmaWxsPSJibGFjayIvPjxjaXJjbGUgY3g9IjE0IiBjeT0iNSIgcj0iMS41IiBmaWxsPSJibGFjayIvPjwvc3ZnPg==';
+
         function draw() {
             if (!gameRunning) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "red";
-            ctx.fillRect(food.x, food.y, box, box);
+            
+            // Disegna il cibo
+            ctx.drawImage(appleImg, food.x, food.y, box, box);
+            
+            // Disegna il cibo speciale
             if (specialFood) {
-                ctx.fillStyle = specialFood.type === "worm" ? "orange" : "yellow";
-                ctx.fillRect(specialFood.x, specialFood.y, box, box);
+                const img = specialFood.type === "worm" ? wormImg : insectImg;
+                ctx.drawImage(img, specialFood.x, specialFood.y, box, box);
             }
-            ctx.fillStyle = "lime";
-            snake.forEach(part => ctx.fillRect(part.x, part.y, box, box));
+            
+            // Disegna il serpente
+            snake.forEach((part, index) => {
+                if (index === 0) {
+                    // Testa del serpente con orientamento
+                    ctx.save();
+                    ctx.translate(part.x + box/2, part.y + box/2);
+                    if (direction === "LEFT") ctx.rotate(-Math.PI/2);
+                    else if (direction === "RIGHT") ctx.rotate(Math.PI/2);
+                    else if (direction === "UP") ctx.rotate(Math.PI);
+                    ctx.drawImage(snakeHeadImg, -box/2, -box/2, box, box);
+                    ctx.restore();
+                } else {
+                    // Corpo del serpente
+                    ctx.drawImage(snakeBodyImg, part.x, part.y, box, box);
+                }
+            });
         }
 
         function move() {
@@ -74,27 +106,37 @@
             if (direction === "RIGHT") head.x += box;
             if (direction === "UP") head.y -= box;
             if (direction === "DOWN") head.y += box;
+            
+            // Teleport ai bordi
             head.x = (head.x + canvas.width) % canvas.width;
             head.y = (head.y + canvas.height) % canvas.height;
-            if (snake.some(part => part.x === head.x && part.y === head.y)) {
-                gameRunning = false;
-                alert("Game Over!");
-                location.reload();
+            
+            // Controllo collisione con se stesso
+            if (snake.some((part, index) => index > 0 && part.x === head.x && part.y === head.y)) {
+                gameOver();
+                return;
             }
+            
             snake.unshift(head);
-            if (head.x === food.x && head.y === food.y) {
+            
+            // Controllo collisione con il cibo
+            if (Math.abs(head.x - food.x) < box && Math.abs(head.y - food.y) < box) {
                 score++;
                 food = generateFood();
                 if (Math.random() < 0.2) specialFood = generateSpecialFood();
-            } else if (specialFood && head.x === specialFood.x && head.y === specialFood.y) {
+            } 
+            // Controllo collisione con cibo speciale
+            else if (specialFood && Math.abs(head.x - specialFood.x) < box && Math.abs(head.y - specialFood.y) < box) {
                 score += specialFood.type === "worm" ? 2 : 5;
                 for (let i = 0; i < (specialFood.type === "worm" ? 2 : 5); i++) {
-                    snake.push({});
+                    snake.push({...snake[snake.length-1]});
                 }
                 specialFood = null;
-            } else {
+            } 
+            else {
                 snake.pop();
             }
+            
             document.getElementById("score").innerText = score;
             if (score > highscore) {
                 highscore = score;
@@ -104,19 +146,34 @@
             draw();
         }
 
+        function gameOver() {
+            gameRunning = false;
+            alert("Game Over!");
+            location.reload();
+        }
+
         function generateFood() {
-            return {
-                x: Math.floor(Math.random() * (canvas.width / box)) * box,
-                y: Math.floor(Math.random() * (canvas.height / box)) * box
-            };
+            let newFood;
+            do {
+                newFood = {
+                    x: Math.floor(Math.random() * (canvas.width / box)) * box,
+                    y: Math.floor(Math.random() * (canvas.height / box)) * box
+                };
+            } while (snake.some(part => part.x === newFood.x && part.y === newFood.y));
+            return newFood;
         }
         
         function generateSpecialFood() {
-            return {
-                x: Math.floor(Math.random() * (canvas.width / box)) * box,
-                y: Math.floor(Math.random() * (canvas.height / box)) * box,
-                type: Math.random() < 0.7 ? "worm" : "insect"
-            };
+            let newFood;
+            do {
+                newFood = {
+                    x: Math.floor(Math.random() * (canvas.width / box)) * box,
+                    y: Math.floor(Math.random() * (canvas.height / box)) * box,
+                    type: Math.random() < 0.7 ? "worm" : "insect"
+                };
+            } while (snake.some(part => part.x === newFood.x && part.y === newFood.y) || 
+                   (newFood.x === food.x && newFood.y === food.y));
+            return newFood;
         }
 
         function handleSwipe(startX, startY, endX, endY) {
@@ -131,6 +188,15 @@
             }
         }
 
+        // Controlli da tastiera
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
+            else if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
+            else if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
+            else if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+        });
+
+        // Controlli touch
         let startX, startY;
         document.addEventListener("touchstart", (event) => {
             startX = event.touches[0].clientX;
