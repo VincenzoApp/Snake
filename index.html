@@ -19,11 +19,11 @@
         canvas {
             background-color: black;
             display: block;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             border: 2px solid white;
+            width: 100vmin;
+            height: 100vmin;
+            max-width: 600px;
+            max-height: 600px;
         }
         #scoreboard {
             position: fixed;
@@ -34,7 +34,7 @@
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="600" height="600"></canvas>
+    <canvas id="gameCanvas"></canvas>
     <div id="scoreboard">
         Punteggio: <span id="score">0</span> | Record: <span id="highscore">0</span>
     </div>
@@ -42,8 +42,10 @@
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-        const box = 30;
-        let snake = [{ x: 300, y: 300 }];
+        canvas.width = Math.min(window.innerWidth, window.innerHeight) * 0.95;
+        canvas.height = canvas.width;
+        const box = canvas.width / 20;
+        let snake = [{ x: 10 * box, y: 10 * box }];
         let direction = "RIGHT";
         let score = 0;
         let highscore = localStorage.getItem("highscore") || 0;
@@ -62,9 +64,7 @@
                 ctx.fillRect(specialFood.x, specialFood.y, box, box);
             }
             ctx.fillStyle = "lime";
-            snake.forEach((part, index) => {
-                ctx.fillRect(part.x, part.y, box, box);
-            });
+            snake.forEach(part => ctx.fillRect(part.x, part.y, box, box));
         }
 
         function move() {
