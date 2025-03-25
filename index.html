@@ -89,7 +89,7 @@
             } else if (specialFood && head.x === specialFood.x && head.y === specialFood.y) {
                 score += specialFood.type === "worm" ? 2 : 5;
                 for (let i = 0; i < (specialFood.type === "worm" ? 2 : 5); i++) {
-                    snake.push({});
+                    snake.push({ ...snake[snake.length - 1] });
                 }
                 specialFood = null;
             } else {
@@ -105,18 +105,26 @@
         }
 
         function generateFood() {
-            return {
-                x: Math.floor(Math.random() * (canvas.width / box)) * box,
-                y: Math.floor(Math.random() * (canvas.height / box)) * box
-            };
+            let position;
+            do {
+                position = {
+                    x: Math.floor(Math.random() * (canvas.width / box)) * box,
+                    y: Math.floor(Math.random() * (canvas.height / box)) * box
+                };
+            } while (snake.some(part => part.x === position.x && part.y === position.y));
+            return position;
         }
         
         function generateSpecialFood() {
-            return {
-                x: Math.floor(Math.random() * (canvas.width / box)) * box,
-                y: Math.floor(Math.random() * (canvas.height / box)) * box,
-                type: Math.random() < 0.7 ? "worm" : "insect"
-            };
+            let position;
+            do {
+                position = {
+                    x: Math.floor(Math.random() * (canvas.width / box)) * box,
+                    y: Math.floor(Math.random() * (canvas.height / box)) * box,
+                    type: Math.random() < 0.7 ? "worm" : "insect"
+                };
+            } while (snake.some(part => part.x === position.x && part.y === position.y));
+            return position;
         }
 
         function handleSwipe(startX, startY, endX, endY) {
