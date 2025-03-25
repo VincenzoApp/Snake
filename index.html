@@ -15,19 +15,19 @@
             align-items: center;
             height: 100vh;
             background-color: #222;
+            flex-direction: column;
         }
         canvas {
             background-color: black;
             display: block;
             border: 2px solid white;
-            width: 100vmin;
-            height: 100vmin;
+            width: 90vw;
+            height: 60vh;
             max-width: 600px;
-            max-height: 600px;
+            max-height: 400px;
         }
         #scoreboard {
-            position: fixed;
-            bottom: 20px;
+            margin-top: 10px;
             font-size: 20px;
             color: white;
         }
@@ -42,9 +42,9 @@
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-        canvas.width = Math.min(window.innerWidth, window.innerHeight) * 0.95;
-        canvas.height = canvas.width;
-        const box = canvas.width / 20;
+        canvas.width = Math.min(window.innerWidth * 0.9, 600);
+        canvas.height = Math.min(window.innerHeight * 0.6, 400);
+        const box = 20;
         let snake = [{ x: 10 * box, y: 10 * box }];
         let direction = "RIGHT";
         let score = 0;
@@ -105,11 +105,18 @@
         }
 
         function generateFood() {
-            return { x: Math.floor(Math.random() * (canvas.width / box)) * box, y: Math.floor(Math.random() * (canvas.height / box)) * box };
+            return {
+                x: Math.floor(Math.random() * (canvas.width / box)) * box,
+                y: Math.floor(Math.random() * (canvas.height / box)) * box
+            };
         }
         
         function generateSpecialFood() {
-            return { x: Math.floor(Math.random() * (canvas.width / box)) * box, y: Math.floor(Math.random() * (canvas.height / box)) * box, type: Math.random() < 0.7 ? "worm" : "insect" };
+            return {
+                x: Math.floor(Math.random() * (canvas.width / box)) * box,
+                y: Math.floor(Math.random() * (canvas.height / box)) * box,
+                type: Math.random() < 0.7 ? "worm" : "insect"
+            };
         }
 
         function handleSwipe(startX, startY, endX, endY) {
