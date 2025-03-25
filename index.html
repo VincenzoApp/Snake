@@ -53,12 +53,13 @@
         let food = generateFood();
         let specialFood = null;
         let gameRunning = true;
+        const appleImage = new Image();
+        appleImage.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Red_Apple.png/32px-Red_Apple.png";
 
         function draw() {
             if (!gameRunning) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "red";
-            ctx.fillRect(food.x, food.y, box, box);
+            ctx.drawImage(appleImage, food.x, food.y, box, box);
             if (specialFood) {
                 ctx.fillStyle = specialFood.type === "worm" ? "orange" : "yellow";
                 ctx.fillRect(specialFood.x, specialFood.y, box, box);
@@ -82,11 +83,11 @@
                 location.reload();
             }
             snake.unshift(head);
-            if (head.x === food.x && head.y === food.y) {
+            if (isColliding(head, food)) {
                 score++;
                 food = generateFood();
                 if (Math.random() < 0.2) specialFood = generateSpecialFood();
-            } else if (specialFood && head.x === specialFood.x && head.y === specialFood.y) {
+            } else if (specialFood && isColliding(head, specialFood)) {
                 score += specialFood.type === "worm" ? 2 : 5;
                 for (let i = 0; i < (specialFood.type === "worm" ? 2 : 5); i++) {
                     snake.push({ ...snake[snake.length - 1] });
@@ -111,7 +112,7 @@
                     x: Math.floor(Math.random() * (canvas.width / box)) * box,
                     y: Math.floor(Math.random() * (canvas.height / box)) * box
                 };
-            } while (snake.some(part => part.x === position.x && part.y === position.y));
+            } while (snake.some(part => isColliding(part, position)));
             return position;
         }
         
@@ -123,8 +124,17 @@
                     y: Math.floor(Math.random() * (canvas.height / box)) * box,
                     type: Math.random() < 0.7 ? "worm" : "insect"
                 };
-            } while (snake.some(part => part.x === position.x && part.y === position.y));
+            } while (snake.some(part => isColliding(part, position)));
             return position;
+        }
+
+        function isColliding(a, b) {
+            return (
+                a.x < b.x + box &&
+                a.x + box > b.x &&
+                a.y < b.y + box &&
+                a.y + box > b.y
+            );
         }
 
         function handleSwipe(startX, startY, endX, endY) {
