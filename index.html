@@ -2,133 +2,439 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Snake Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Realistico</title>
     <style>
         body {
-            text-align: center;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
             margin: 0;
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #222;
-            flex-direction: column;
+            background-color: #111;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        #game-container {
+            text-align: center;
+            position: relative;
         }
         canvas {
-            background-color: #1a3a1a;
+            background-color: black;
+            border: 2px solid #333;
             display: block;
-            border: 2px solid white;
-            width: 90vw;
-            height: 60vh;
-            max-width: 600px;
-            max-height: 400px;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
         }
         #scoreboard {
-            margin-top: 10px;
-            font-size: 20px;
             color: white;
+            font-size: 20px;
+            margin-top: 15px;
+            text-shadow: 0 0 5px #0f0;
+        }
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: red;
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #f00;
+            display: none;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <div id="scoreboard">
-        Punteggio: <span id="score">0</span> | Record: <span id="highscore">0</span>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div id="scoreboard">
+            Punteggio: <span id="score">0</span> | Record: <span id="highscore">0</span>
+        </div>
+        <div id="game-over">GAME OVER</div>
     </div>
 
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = Math.min(window.innerWidth * 0.9, 600);
-        canvas.height = Math.min(window.innerHeight * 0.6, 400);
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
         const box = 20;
-        let snake = [{ x: 10 * box, y: 10 * box }];
-        let direction = "RIGHT";
-        let score = 0;
-        let highscore = localStorage.getItem("highscore") || 0;
-        document.getElementById("highscore").innerText = highscore;
-        let food = generateFood();
-        let specialFood = null;
-        let gameRunning = true;
-
-        // Immagini per gli elementi del gioco
-        const snakeHeadImg = new Image();
-        const snakeBodyImg = new Image();
-        const appleImg = new Image();
-        const wormImg = new Image();
-        const insectImg = new Image();
+        const canvasSize = 400;
         
-        // Caricamento immagini (usiamo forme semplici se le immagini non caricano)
-        snakeHeadImg.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iOCIgZmlsbD0ibGltZSIvPjxjaXJjbGUgY3g9IjgiIGN5PSI4IiByPSIxLjUiIGZpbGw9ImJsYWNrIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIxLjUiIGZpbGw9ImJsYWNrIi8+PHBhdGggZD0iTTggMTMgUTkgMTQgMTIgMTQgUTE1IDE0IDE2IDEzIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48L3N2Zz4=';
-        snakeBodyImg.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iOCIgZmlsbD0ibGltZSIvPjwvc3ZnPg==';
-        appleImg.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iOCIgZmlsbD0icmVkIi8+PHBhdGggZD0iTTEwIDIgTDEwIDQiIHN0cm9rZT0iZ3JlZW4iIHN0cm9rZS13aWR0aD0iMiIvPjxwYXRoIGQ9Ik0xMCA0IHEtMiAwIC0yIDIiIHN0cm9rZT0iZ3JlZW4iIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==';
-        wormImg.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCI+PGVsbGlwc2UgY3g9IjEwIiBjeT0iMTAiIHJ4PSI4IiByeT0iNCIgZmlsbD0ib3JhbmdlIi8+PGNpcmNsZSBjeD0iNiIgY3k9IjEwIiByPSIxIiBmaWxsPSJibGFjayIvPjwvc3ZnPg==';
-        insectImg.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iNiIgZmlsbD0ieWVsbG93Ii8+PHBhdGggZD0iTTQgNiBMMTYgNiIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTTQgMTQgTDE2IDE0IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiLz48Y2lyY2xlIGN4PSI2IiBjeT0iNSIgcj0iMS41IiBmaWxsPSJibGFjayIvPjxjaXJjbGUgY3g9IjE0IiBjeT0iNSIgcj0iMS41IiBmaWxsPSJibGFjayIvPjwvc3ZnPg==';
+        // Imposta dimensioni fisse
+        canvas.width = canvasSize;
+        canvas.height = canvasSize;
+        
+        let snake = [
+            {x: 9 * box, y: 9 * box},
+            {x: 8 * box, y: 9 * box},
+            {x: 7 * box, y: 9 * box}
+        ];
+        let direction = 'RIGHT';
+        let nextDirection = 'RIGHT';
+        let food = createFood();
+        let specialFood = null;
+        let score = 0;
+        let highscore = localStorage.getItem('snakeHighscore') || 0;
+        let gameOver = false;
+        let lastRenderTime = 0;
+        const SNAKE_SPEED = 10; // Movimenti al secondo
+        
+        document.getElementById('highscore').textContent = highscore;
 
-        function draw() {
-            if (!gameRunning) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Disegna il cibo
-            ctx.drawImage(appleImg, food.x, food.y, box, box);
-            
-            // Disegna il cibo speciale
-            if (specialFood) {
-                const img = specialFood.type === "worm" ? wormImg : insectImg;
-                ctx.drawImage(img, specialFood.x, specialFood.y, box, box);
-            }
-            
-            // Disegna il serpente
-            snake.forEach((part, index) => {
-                if (index === 0) {
-                    // Testa del serpente con orientamento
+        // Funzione per creare il cibo
+        function createFood() {
+            return {
+                x: Math.floor(Math.random() * (canvas.width / box)) * box,
+                y: Math.floor(Math.random() * (canvas.height / box)) * box
+            };
+        }
+
+        // Funzione per creare cibo speciale
+        function createSpecialFood() {
+            return {
+                x: Math.floor(Math.random() * (canvas.width / box)) * box,
+                y: Math.floor(Math.random() * (canvas.height / box)) * box,
+                type: Math.random() < 0.7 ? 'worm' : 'insect',
+                spawnTime: Date.now()
+            };
+        }
+
+        // Disegna il serpente con effetto realistico
+        function drawSnake() {
+            snake.forEach((segment, index) => {
+                const isHead = index === 0;
+                const isTail = index === snake.length - 1;
+                
+                // Ombreggiatura
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 5;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+                
+                if (isHead) {
+                    // Testa con forma a seconda della direzione
+                    ctx.fillStyle = '#4CAF50';
+                    ctx.beginPath();
+                    
                     ctx.save();
-                    ctx.translate(part.x + box/2, part.y + box/2);
-                    if (direction === "LEFT") ctx.rotate(-Math.PI/2);
-                    else if (direction === "RIGHT") ctx.rotate(Math.PI/2);
-                    else if (direction === "UP") ctx.rotate(Math.PI);
-                    ctx.drawImage(snakeHeadImg, -box/2, -box/2, box, box);
+                    ctx.translate(segment.x + box/2, segment.y + box/2);
+                    
+                    if (direction === 'LEFT') ctx.rotate(-Math.PI/2);
+                    else if (direction === 'RIGHT') ctx.rotate(Math.PI/2);
+                    else if (direction === 'UP') ctx.rotate(Math.PI);
+                    
+                    ctx.ellipse(0, 0, box/2, box/2.5, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Occhi
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(-5, -5, 3, 0, Math.PI * 2);
+                    ctx.arc(5, -5, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath();
+                    ctx.arc(-5, -5, 1.5, 0, Math.PI * 2);
+                    ctx.arc(5, -5, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Lingua (animata)
+                    const tongueOut = Math.sin(Date.now() / 100) > 0.8;
+                    if (tongueOut && (direction === 'RIGHT' || direction === 'LEFT')) {
+                        ctx.fillStyle = 'red';
+                        ctx.beginPath();
+                        ctx.moveTo(box/2, 0);
+                        ctx.lineTo(box/2 + 5, 3);
+                        ctx.lineTo(box/2 + 5, -3);
+                        ctx.fill();
+                    }
+                    
                     ctx.restore();
                 } else {
-                    // Corpo del serpente
-                    ctx.drawImage(snakeBodyImg, part.x, part.y, box, box);
+                    // Corpo con gradiente di colore
+                    const colorIntensity = 0.7 + (index / snake.length) * 0.3;
+                    ctx.fillStyle = `rgb(46, 125, 50, ${colorIntensity})`;
+                    
+                    // Forma ovale per il corpo
+                    ctx.beginPath();
+                    
+                    // Calcola la direzione rispetto al segmento successivo/precedente
+                    const prev = snake[Math.max(0, index-1)];
+                    const next = snake[Math.min(snake.length-1, index+1)];
+                    
+                    let angle = Math.atan2(next.y - prev.y, next.x - prev.x);
+                    
+                    ctx.save();
+                    ctx.translate(segment.x + box/2, segment.y + box/2);
+                    ctx.rotate(angle);
+                    
+                    const width = isTail ? box * 0.7 : box * 0.9;
+                    ctx.ellipse(0, 0, width/2, box/3, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Aggiungi linee tra i segmenti
+                    if (!isTail) {
+                        ctx.strokeStyle = '#1B5E20';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(width/2, 0);
+                        ctx.lineTo(width/2 + box * 0.8, 0);
+                        ctx.stroke();
+                    }
+                    
+                    ctx.restore();
                 }
+                
+                ctx.shadowColor = 'transparent';
             });
         }
 
-        function move() {
-            if (!gameRunning) return;
-            let head = { ...snake[0] };
-            if (direction === "LEFT") head.x -= box;
-            if (direction === "RIGHT") head.x += box;
-            if (direction === "UP") head.y -= box;
-            if (direction === "DOWN") head.y += box;
+        // Disegna la mela con dettagli realistici
+        function drawApple() {
+            // Ombreggiatura
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 5;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
             
-            // Teleport ai bordi
-            head.x = (head.x + canvas.width) % canvas.width;
-            head.y = (head.y + canvas.height) % canvas.height;
+            // Corpo mela con gradiente
+            const gradient = ctx.createRadialGradient(
+                food.x + box/2, food.y + box/2, 0,
+                food.x + box/2, food.y + box/2, box/2
+            );
+            gradient.addColorStop(0, '#FF5252');
+            gradient.addColorStop(1, '#D32F2F');
+            ctx.fillStyle = gradient;
             
-            // Controllo collisione con se stesso
-            if (snake.some((part, index) => index > 0 && part.x === head.x && part.y === head.y)) {
-                gameOver();
+            ctx.beginPath();
+            ctx.ellipse(food.x + box/2, food.y + box/2, box/2.5, box/2, Math.PI/6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Picciolo
+            ctx.strokeStyle = '#5D4037';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(food.x + box/1.5, food.y + box/4);
+            ctx.quadraticCurveTo(food.x + box/1.2, food.y - box/10, food.x + box/3, food.y + box/6);
+            ctx.stroke();
+            
+            // Foglia con dettagli
+            ctx.fillStyle = '#388E3C';
+            ctx.beginPath();
+            ctx.moveTo(food.x + box/3, food.y + box/6);
+            ctx.quadraticCurveTo(food.x + box/4, food.y - box/3, food.x, food.y + box/6);
+            ctx.quadraticCurveTo(food.x + box/6, food.y + box/3, food.x + box/3, food.y + box/6);
+            ctx.fill();
+            
+            // Venatura foglia
+            ctx.strokeStyle = '#2E7D32';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(food.x + box/3, food.y + box/6);
+            ctx.quadraticCurveTo(food.x + box/6, food.y + box/10, food.x + box/8, food.y + box/4);
+            ctx.stroke();
+            
+            // Riflesso
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.beginPath();
+            ctx.arc(food.x + box/1.8, food.y + box/3, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowColor = 'transparent';
+        }
+
+        // Disegna il verme con animazione
+        function drawWorm() {
+            if (!specialFood) return;
+            
+            const time = Date.now() - specialFood.spawnTime;
+            const wiggle = Math.sin(time / 200) * 3;
+            
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 5;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            
+            // Corpo segmentato con animazione
+            const segments = 5;
+            for (let i = 0; i < segments; i++) {
+                const offset = Math.sin(time / 300 + i) * 2;
+                const segX = specialFood.x + i * (box / segments);
+                const segY = specialFood.y + (i % 2 === 0 ? wiggle : -wiggle) + offset;
+                
+                ctx.fillStyle = i % 2 === 0 ? '#FFA000' : '#FF8F00';
+                ctx.beginPath();
+                ctx.ellipse(
+                    segX + box/segments/2, 
+                    segY + box/2, 
+                    box/segments/1.5, 
+                    box/3, 
+                    0, 
+                    0, 
+                    Math.PI * 2
+                );
+                ctx.fill();
+                
+                // Anelli tra i segmenti
+                if (i < segments - 1) {
+                    ctx.strokeStyle = '#E65100';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(segX + box/segments, segY + box/2, 2, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            
+            // Occhi
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(specialFood.x + box/6, specialFood.y + box/3 + wiggle/2, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowColor = 'transparent';
+        }
+
+        // Disegna l'insetto con ali animate
+        function drawInsect() {
+            if (!specialFood) return;
+            
+            const time = Date.now() - specialFood.spawnTime;
+            const wingFlap = Math.abs(Math.sin(time / 100)) * 5;
+            
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 5;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            
+            // Corpo
+            const gradient = ctx.createLinearGradient(
+                specialFood.x + box/2, specialFood.y,
+                specialFood.x + box/2, specialFood.y + box
+            );
+            gradient.addColorStop(0, '#FFD600');
+            gradient.addColorStop(1, '#FBC02D');
+            ctx.fillStyle = gradient;
+            
+            ctx.beginPath();
+            ctx.ellipse(
+                specialFood.x + box/2, 
+                specialFood.y + box/2, 
+                box/3, 
+                box/4, 
+                0, 
+                0, 
+                Math.PI * 2
+            );
+            ctx.fill();
+            
+            // Testa
+            ctx.fillStyle = '#FFAB00';
+            ctx.beginPath();
+            ctx.arc(specialFood.x + box/2, specialFood.y + box/4, box/6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Ali con animazione di battito
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            for (let i = 0; i < 2; i++) {
+                ctx.beginPath();
+                ctx.moveTo(specialFood.x + box/2, specialFood.y + box/3);
+                const cpx = i === 0 ? specialFood.x : specialFood.x + box;
+                ctx.quadraticCurveTo(
+                    cpx, 
+                    specialFood.y + box/3 - wingFlap, 
+                    specialFood.x + box/2 + (i === 0 ? -box/4 : box/4), 
+                    specialFood.y + box/3
+                );
+                ctx.quadraticCurveTo(
+                    cpx, 
+                    specialFood.y + box/3 + wingFlap, 
+                    specialFood.x + box/2, 
+                    specialFood.y + box/3
+                );
+                ctx.fill();
+            }
+            
+            // Occhi
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(specialFood.x + box/2.5, specialFood.y + box/4, 1.5, 0, Math.PI * 2);
+            ctx.arc(specialFood.x + box/1.7, specialFood.y + box/4, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Zampe
+            ctx.strokeStyle = '#FFA000';
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 3; i++) {
+                const legY = specialFood.y + box/2 + i * box/6;
+                ctx.beginPath();
+                ctx.moveTo(specialFood.x + box/3, legY);
+                ctx.lineTo(specialFood.x + box/6, legY + box/6);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(specialFood.x + box*2/3, legY);
+                ctx.lineTo(specialFood.x + box*5/6, legY + box/6);
+                ctx.stroke();
+            }
+            
+            ctx.shadowColor = 'transparent';
+        }
+
+        // Funzione principale di gioco
+        function gameLoop(timestamp) {
+            if (gameOver) {
+                document.getElementById('game-over').style.display = 'block';
+                return;
+            }
+            
+            // Controllo del frame rate
+            if (!lastRenderTime) lastRenderTime = timestamp;
+            const secondsSinceLastRender = (timestamp - lastRenderTime) / 1000;
+            if (secondsSinceLastRender < 1 / SNAKE_SPEED) {
+                window.requestAnimationFrame(gameLoop);
+                return;
+            }
+            lastRenderTime = timestamp;
+            
+            direction = nextDirection;
+            
+            // Muovi il serpente
+            const head = {x: snake[0].x, y: snake[0].y};
+            
+            if (direction === 'LEFT') head.x -= box;
+            if (direction === 'RIGHT') head.x += box;
+            if (direction === 'UP') head.y -= box;
+            if (direction === 'DOWN') head.y += box;
+            
+            // Attraversamento dei bordi
+            if (head.x < 0) head.x = canvas.width - box;
+            else if (head.x >= canvas.width) head.x = 0;
+            if (head.y < 0) head.y = canvas.height - box;
+            else if (head.y >= canvas.height) head.y = 0;
+            
+            // Controlla collisione con il corpo
+            if (snake.some((segment, index) => index > 0 && segment.x === head.x && segment.y === head.y)) {
+                endGame();
                 return;
             }
             
             snake.unshift(head);
             
-            // Controllo collisione con il cibo
-            if (Math.abs(head.x - food.x) < box && Math.abs(head.y - food.y) < box) {
+            // Controlla se mangia il cibo
+            if (head.x === food.x && head.y === food.y) {
                 score++;
-                food = generateFood();
-                if (Math.random() < 0.2) specialFood = generateSpecialFood();
+                food = createFood();
+                if (Math.random() < 0.2) {
+                    specialFood = createSpecialFood();
+                }
             } 
-            // Controllo collisione con cibo speciale
-            else if (specialFood && Math.abs(head.x - specialFood.x) < box && Math.abs(head.y - specialFood.y) < box) {
-                score += specialFood.type === "worm" ? 2 : 5;
-                for (let i = 0; i < (specialFood.type === "worm" ? 2 : 5); i++) {
+            // Controlla se mangia cibo speciale
+            else if (specialFood && head.x === specialFood.x && head.y === specialFood.y) {
+                score += specialFood.type === 'worm' ? 2 : 5;
+                // Aggiungi più segmenti per cibo speciale
+                for (let i = 0; i < (specialFood.type === 'worm' ? 2 : 3); i++) {
                     snake.push({...snake[snake.length-1]});
                 }
                 specialFood = null;
@@ -137,77 +443,92 @@
                 snake.pop();
             }
             
-            document.getElementById("score").innerText = score;
+            // Rimuovi cibo speciale dopo 10 secondi
+            if (specialFood && Date.now() - specialFood.spawnTime > 10000) {
+                specialFood = null;
+            }
+            
+            // Aggiorna il punteggio
+            document.getElementById('score').textContent = score;
             if (score > highscore) {
                 highscore = score;
-                localStorage.setItem("highscore", highscore);
-                document.getElementById("highscore").innerText = highscore;
+                localStorage.setItem('snakeHighscore', highscore);
+                document.getElementById('highscore').textContent = highscore;
             }
-            draw();
-        }
-
-        function gameOver() {
-            gameRunning = false;
-            alert("Game Over!");
-            location.reload();
-        }
-
-        function generateFood() {
-            let newFood;
-            do {
-                newFood = {
-                    x: Math.floor(Math.random() * (canvas.width / box)) * box,
-                    y: Math.floor(Math.random() * (canvas.height / box)) * box
-                };
-            } while (snake.some(part => part.x === newFood.x && part.y === newFood.y));
-            return newFood;
-        }
-        
-        function generateSpecialFood() {
-            let newFood;
-            do {
-                newFood = {
-                    x: Math.floor(Math.random() * (canvas.width / box)) * box,
-                    y: Math.floor(Math.random() * (canvas.height / box)) * box,
-                    type: Math.random() < 0.7 ? "worm" : "insect"
-                };
-            } while (snake.some(part => part.x === newFood.x && part.y === newFood.y) || 
-                   (newFood.x === food.x && newFood.y === food.y));
-            return newFood;
-        }
-
-        function handleSwipe(startX, startY, endX, endY) {
-            let diffX = endX - startX;
-            let diffY = endY - startY;
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                if (diffX > 0 && direction !== "LEFT") direction = "RIGHT";
-                else if (diffX < 0 && direction !== "RIGHT") direction = "LEFT";
-            } else {
-                if (diffY > 0 && direction !== "UP") direction = "DOWN";
-                else if (diffY < 0 && direction !== "DOWN") direction = "UP";
+            
+            // Disegna tutto
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Griglia di sfondo
+            ctx.strokeStyle = 'rgba(50, 50, 50, 0.5)';
+            ctx.lineWidth = 0.5;
+            for (let x = 0; x < canvas.width; x += box) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
             }
+            for (let y = 0; y < canvas.height; y += box) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            drawApple();
+            if (specialFood) {
+                if (specialFood.type === 'worm') drawWorm();
+                else drawInsect();
+            }
+            drawSnake();
+            
+            window.requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            gameOver = true;
+            document.getElementById('game-over').style.display = 'block';
+            
+            canvas.addEventListener('click', () => {
+                location.reload();
+            }, {once: true});
         }
 
         // Controlli da tastiera
-        document.addEventListener("keydown", (event) => {
-            if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
-            else if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
-            else if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
-            else if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft' && direction !== 'RIGHT') nextDirection = 'LEFT';
+            if (e.key === 'ArrowRight' && direction !== 'LEFT') nextDirection = 'RIGHT';
+            if (e.key === 'ArrowUp' && direction !== 'DOWN') nextDirection = 'UP';
+            if (e.key === 'ArrowDown' && direction !== 'UP') nextDirection = 'DOWN';
         });
 
-        // Controlli touch
-        let startX, startY;
-        document.addEventListener("touchstart", (event) => {
-            startX = event.touches[0].clientX;
-            startY = event.touches[0].clientY;
-        });
+        // Controlli touch per mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        canvas.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, false);
+        
+        canvas.addEventListener('touchend', e => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX > 0 && direction !== 'LEFT') nextDirection = 'RIGHT';
+                else if (diffX < 0 && direction !== 'RIGHT') nextDirection = 'LEFT';
+            } else {
+                if (diffY > 0 && direction !== 'UP') nextDirection = 'DOWN';
+                else if (diffY < 0 && direction !== 'DOWN') nextDirection = 'UP';
+            }
+        }, false);
 
-        document.addEventListener("touchend", (event) => {
-            handleSwipe(startX, startY, event.changedTouches[0].clientX, event.changedTouches[0].clientY);
-        });
-
-        setInterval(move, 150);
+        // Avvia il gioco
+        window.requestAnimationFrame(gameLoop);
     </script>
 </body>
 </html>
