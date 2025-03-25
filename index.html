@@ -2,26 +2,39 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Snake Game</title>
     <style>
         body {
             text-align: center;
             font-family: Arial, sans-serif;
+            overflow: hidden;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #222;
         }
         canvas {
             background-color: black;
             display: block;
-            margin: auto;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid white;
         }
         #scoreboard {
-            margin-top: 20px;
+            position: fixed;
+            bottom: 20px;
             font-size: 20px;
+            color: white;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <canvas id="gameCanvas" width="600" height="600"></canvas>
     <div id="scoreboard">
         Punteggio: <span id="score">0</span> | Record: <span id="highscore">0</span>
     </div>
@@ -29,8 +42,8 @@
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-        const box = 20;
-        let snake = [{ x: 200, y: 200 }];
+        const box = 30;
+        let snake = [{ x: 300, y: 300 }];
         let direction = "RIGHT";
         let score = 0;
         let highscore = localStorage.getItem("highscore") || 0;
@@ -63,6 +76,11 @@
             if (direction === "DOWN") head.y += box;
             head.x = (head.x + canvas.width) % canvas.width;
             head.y = (head.y + canvas.height) % canvas.height;
+            if (snake.some(part => part.x === head.x && part.y === head.y)) {
+                gameRunning = false;
+                alert("Game Over!");
+                location.reload();
+            }
             snake.unshift(head);
             if (head.x === food.x && head.y === food.y) {
                 score++;
